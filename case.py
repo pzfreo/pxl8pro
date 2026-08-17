@@ -4,8 +4,12 @@ Derived from "Pixel 8 Pro Case (TPU)" by JamesSF69:
     https://www.printables.com/model/765202-pixel-8-pro-case-tpu
     https://www.printables.com/@JamesSF69_537205
 Rebuilt from `pixel8CaseChargeHoleBigger.stl` by measuring the mesh; every
-dimension below was taken off that model unless marked otherwise. See README
-for attribution and licence.
+dimension below was taken off that model unless marked otherwise.
+
+The original is CC BY-SA 4.0, so this derivative is too. See LICENSE for
+attribution and the list of changes.
+
+SPDX-License-Identifier: CC-BY-SA-4.0
 
 Coordinate system
 -----------------

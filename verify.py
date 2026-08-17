@@ -1,5 +1,7 @@
 """Compare the rebuilt case against the original STL.
 
+SPDX-License-Identifier: CC-BY-SA-4.0
+
 The reference mesh is not centred on the origin; REF_SHIFT moves it into the
 coordinate system `case.py` builds in (see the module docstring there).
 """

@@ -1,0 +1,53 @@
+Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+
+SPDX-License-Identifier: CC-BY-SA-4.0
+
+Full legal code: https://creativecommons.org/licenses/by-sa/4.0/legalcode.en
+Summary (deed):  https://creativecommons.org/licenses/by-sa/4.0/
+
+
+ORIGINAL WORK
+-------------
+
+"Pixel 8 Pro Case (TPU)" by JamesSF69
+    https://www.printables.com/model/765202-pixel-8-pro-case-tpu
+    https://www.printables.com/@JamesSF69_537205
+Licensed under CC BY-SA 4.0.
+
+
+THIS WORK
+---------
+
+This repository is a derivative of the above and is licensed under the same
+terms, CC BY-SA 4.0, as ShareAlike requires.
+
+The original design — overall form, phone cavity and its clearances, lip and
+rim profile, camera bar recess and lens cutouts, port layout, and button
+bumps — is JamesSF69's. This repository re-derives that geometry
+parametrically in build123d by measuring the published STLs.
+
+
+CHANGES MADE
+------------
+
+CC BY-SA requires that modifications be indicated. Relative to the source
+models, this work:
+
+  - re-implements the geometry as a parametric build123d program rather than
+    a fixed mesh
+  - corrects end walls from 2.0 mm to a uniform 3.0 mm, removing a 1 mm step
+    at all four corners
+  - makes the back-edge chamfer symmetric (the source chamfers -X and -Y only)
+  - replaces the flash/sensor circle pair with a single stadium, removing a
+    0.209 mm ligament between them that cannot be printed
+  - derives back thickness from the camera bar depth plus the skin over it
+  - rounds the camera recess corners
+  - holds rounded-rectangle radii clear of w/2 and h/2, so exact stadiums do
+    not mesh with a seam that reads as a hole
+  - adds optional back lightening (square-grid and honeycomb, closed or
+    open-cell), side wall vents, and port bars
+  - adds preset configurations, an exported-thickness report, and a
+    verification script that measures deviation against the source meshes
+
+Attribution must be preserved in any further redistribution, and derivatives
+of this work must also be licensed CC BY-SA 4.0.

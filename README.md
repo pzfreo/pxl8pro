@@ -40,18 +40,26 @@ side. **That is what removed the button bumps**: the wall grew 1.271 mm while
 the bumps stood only 1.000 mm proud, so the offset swallowed them, and it also
 introduced the corner step.
 
-`case.py` reproduces *both* files by changing only two parameters. Against
-`pixel8proCase.stl`, `wall=1.729, back_thk=4.5` gives an identical bounding box
-and 0.046 mm mean deviation.
+`case.py` reproduces *both* files. Against `pixel8proCase.stl`,
+`wall=1.729, cam_recess=2.5, cam_skin=2.0` gives an identical bounding box and
+0.046 mm mean deviation. (`back_thk` is derived from the last two — see
+Camera.)
 
-> **TODO — check the licence before publishing or sharing.**
-> Printables blocks automated fetches (HTTP 403), so the licence could not be
-> read from the model page. **It governs whether these derivatives can be
-> redistributed at all** — any `-ND` variant forbids publishing modified
-> versions, and `-NC` forbids commercial use. Check
-> [the model page](https://www.printables.com/model/765202-pixel-8-pro-case-tpu)
-> before uploading anything here, and keep JamesSF69's credit and a link to
-> the original on any upload.
+### Licence
+
+The original is licensed **[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)**
+(Attribution-ShareAlike 4.0 International). That permits redistribution and
+modification, including commercially, on two conditions:
+
+- **Attribution** — credit JamesSF69, link the original, and indicate that
+  changes were made. Done above and in `LICENSE`.
+- **ShareAlike** — derivatives must carry the same licence. **This repository
+  is therefore also CC BY-SA 4.0**, which is not a free choice: it is inherited
+  from the original and cannot be relicensed to a permissive licence such as
+  MIT or Apache.
+
+`LICENSE` records the original, this work's licence, and an itemised list of
+the changes made, as ShareAlike requires.
 
 ```bash
 uv venv --python 3.12 .venv
