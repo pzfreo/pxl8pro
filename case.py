@@ -63,7 +63,7 @@ class Params:
     clr_z: float = 0.70
 
     # ---- shell -----------------------------------------------------------
-    wall: float = 3.0  # side/end wall thickness
+    wall: float = 1.5  # side/end wall thickness
     # The back is exactly as thick as the camera bar plus the skin over it,
     # so `back_thk` is derived rather than free. The Pixel 8 Pro's bar
     # measures 2.5 mm on the phone, which is also what the stock case uses.
@@ -128,7 +128,7 @@ class Params:
     # plug and must be snipped out -- so it is off by default.
     spk_bars: int = 2
     spk_bar_w: float = 1.0
-    usb_bar: bool = False
+    usb_bar: bool = True
     usb_bar_w: float = 0.8
 
     # ---- button relief ---------------------------------------------------
@@ -136,7 +136,7 @@ class Params:
     # gap the button sees is clr_xy + btn_depth. 0.5 is the thickened file's
     # value; the stock case uses 0.229, giving a 0.821 mm gap that is known
     # to work. There are no button through-holes -- TPU flexes over them.
-    btn_depth: float = 0.5
+    btn_depth: float = 0.229
     btn_z0: float = 2.7
     btn_z1: float = 5.9
     btn_r: float = 1.0
@@ -178,17 +178,17 @@ class Params:
     bump_skin: float = 1.8  # back thickness away from the camera ("bump")
 
     rib_skin: float = 1.8  # solid skin left against the outer back face
-    rib_w: float = 2.0  # wall left between neighbouring pockets
+    rib_w: float = 1.5  # wall left between neighbouring pockets
     rib_pitch: float = 16.0  # "ribbed": square grid spacing
-    hex_pitch: float = 14.0  # "honeycomb": cell centre spacing
-    rib_border: float = 4.0  # solid frame kept around the perimeter
-    rib_cam_border: float = 3.0  # solid kept around the camera pocket
-    pocket_through: bool = False  # cut cells clean through: open, no skin
+    hex_pitch: float = 8.0  # "honeycomb": cell centre spacing
+    rib_border: float = 2.5  # solid frame kept around the perimeter
+    rib_cam_border: float = 2.0  # solid kept around the camera pocket
+    pocket_through: bool = True  # cut cells clean through: open, no skin
     pocket_fillet: float = 1.0  # rounds pocket corners; helps flow and stress
     pocket_min_frac: float = 0.30  # drop boundary pockets below this of full
 
     # ---- side wall vents -------------------------------------------------
-    side_vents: bool = False
+    side_vents: bool = True
     side_vent_af: float = 4.5  # hex size across flats
     side_vent_rib: float = 2.0  # material left between vents
     side_vent_z: float = 3.75  # centre height of the row
@@ -756,30 +756,25 @@ def export(p: Params | None = None, stem: str = "pixel8pro_case"):
 # Named combinations worth building. Everything else is reachable by
 # constructing Params directly.
 PRESETS = {
-    # faithful rebuild of the original, solid back
+    # The design. Bare `Params()` is this, so anything built without an
+    # explicit preset is the tested configuration.
+    "vented": Params(),
+    # Reproduces pixel8CaseChargeHoleBigger.stl for `verify.py`. NOT for
+    # printing -- it is the source file's geometry, defects and all. Every
+    # deviation from the current defaults is stated explicitly so that
+    # changing a default can never silently move the verification baseline.
     "original": Params(
-        back_style="flat", button_bumps=False, flash_stadium=False,
-        cam_recess=3.7, cam_skin=1.5,
-    ),
-    # closed back, hollowed from the cavity side
-    "light": Params(back_style="honeycomb"),
-    # cells cut through, phone shows through
-    "open": Params(back_style="honeycomb", pocket_through=True),
-    # finer cells: same mass as coarse, much smaller openings
-    "mesh": Params(
-        back_style="honeycomb", pocket_through=True, hex_pitch=8.0, rib_w=1.5
-    ),
-    # ... and slimmer side walls on top of that
-    "slim": Params(
-        back_style="honeycomb", pocket_through=True, hex_pitch=8.0, rib_w=1.5,
-        wall=2.0,
-    ),
-    # everything: trimmed borders, side vents, and the sacrificial USB bar
-    # (snip that one out after printing -- it blocks the plug)
-    "vented": Params(
-        back_style="honeycomb", pocket_through=True, hex_pitch=8.0, rib_w=1.5,
-        wall=1.5, btn_depth=0.229, rib_border=2.5, rib_cam_border=2.0,
-        side_vents=True, usb_bar=True,
+        back_style="flat",
+        wall=3.0,
+        cam_recess=3.7,
+        cam_skin=1.5,
+        btn_depth=0.5,
+        button_bumps=False,
+        flash_stadium=False,
+        pocket_through=False,
+        side_vents=False,
+        usb_bar=False,
+        spk_bars=0,
     ),
 }
 
@@ -802,7 +797,7 @@ def describe(p: Params) -> str:
 if __name__ == "__main__":
     import sys
 
-    name = sys.argv[1] if len(sys.argv) > 1 else "light"
+    name = sys.argv[1] if len(sys.argv) > 1 else "vented"
     if name in PRESETS:
         p = PRESETS[name]
     else:

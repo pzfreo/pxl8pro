@@ -1,10 +1,12 @@
 # Pixel 8 Pro case
 
-A printable TPU case for the Pixel 8 Pro, built as a parametric
-[build123d](https://build123d.readthedocs.io) program rather than a fixed mesh —
-so you can change the fit, the wall thickness or the back pattern and rebuild.
+A printable TPU case for the Pixel 8 Pro — **31 g**, 80.7 × 166.8 × 13.0 mm,
+open honeycomb back, no supports.
 
-Based on [JamesSF69's Pixel 8 Pro Case (TPU)](https://www.printables.com/model/765202-pixel-8-pro-case-tpu).
+Built as a parametric [build123d](https://build123d.readthedocs.io) program
+rather than a fixed mesh, so the fit and wall thickness can be changed and
+rebuilt. Based on
+[JamesSF69's Pixel 8 Pro Case (TPU)](https://www.printables.com/model/765202-pixel-8-pro-case-tpu).
 
 ![Pixel 8 Pro case](docs/hero.png)
 
@@ -25,30 +27,11 @@ The result is **31 g against the original's 91 g**, and 1.7 mm thinner.
 
 Full measurements, defects and design reasoning are in **[DESIGN.md](DESIGN.md)**.
 
-## Which one to print
-
-| Preset | Weight | Size (W × L × H) | What you get |
-|---|---|---|---|
-| `vented` | **31 g** | 81.7 × 166.8 × 13.0 | Lightest. Open honeycomb back, vented sides |
-| `slim` | 38 g | 82.7 × 167.8 × 13.0 | Same open back, plain 2 mm sides |
-| `mesh` | 45 g | 84.7 × 169.8 × 13.0 | Open back, original 3 mm walls |
-| `open` | 40 g | 84.7 × 169.8 × 13.0 | Open back with larger 12 mm cells |
-| `light` | 55 g | 84.7 × 169.8 × 13.0 | **Closed** back — nothing shows through |
-| `original` | 94 g | 83.7 × 169.8 × 14.7 | Faithful copy of the source file |
+## Printing
 
 ```bash
-python case.py vented
+python case.py            # -> pixel8pro_case_vented.{stl,step}
 ```
-
-**Pick `light` if you want a solid back.** The others cut the honeycomb clean
-through, so the phone is visible and there is no material behind the back
-glass — lighter and better for wireless charging, but a drop onto gravel can
-reach the glass through a cell. `light` keeps a 1.8 mm skin.
-
-**Pick `vented` if you want the lightest.** 1.5 mm walls: slimmer in the hand,
-but less edge protection, and thin TPU stretches more.
-
-## Printing
 
 Print **back down, opening upwards**, exactly as exported. No supports.
 
@@ -66,44 +49,50 @@ back with no elephant-foot on the very edge.
 
 ### Snip out the USB bar
 
-`vented` includes a **sacrificial 0.8 mm bar across the middle of the USB-C
-opening**. It halves the bridge the printer has to span, and it must be cut out
-before use — it sits where the plug goes. Flush cutters or a sharp blade
-through the opening; TPU will not snap cleanly.
+There is a **sacrificial 0.8 mm bar across the middle of the USB-C opening**.
+It halves the bridge the printer has to span, and it must be cut out before
+use — it sits where the plug goes. Flush cutters or a sharp blade through the
+opening; TPU will not snap cleanly.
 
 The bars in the two speaker slots are **permanent** — leave those in. Nothing
 passes through a speaker slot, so they are just a grille.
 
-To print without the sacrificial bar, use `usb_bar=False` and accept a slightly
-rougher bridge over the port.
+### What you get
 
-## Fit
+| | |
+|---|---|
+| Weight | ~31 g in TPU (25.4 cm³) |
+| Outer | 80.68 × 166.78 × 13.00 mm (81.68 across the button bumps) |
+| Side wall | 1.5 mm |
+| Back | open honeycomb, 6.5 mm cells — the phone shows through |
+| Over the lenses | 1.0 mm |
+| USB-C opening | 15.05 × 7.08 mm |
 
-The defaults reproduce the original's clearance, which is a known-good starting
-point but slightly loose in TPU. For a snugger fit:
+The open back means **there is no material behind the phone's back glass**. It
+is lighter and better for wireless charging, but a drop onto gravel can reach
+the glass through a cell. If that bothers you, `pocket_through=False` gives a
+closed back with a 1.8 mm skin, at about 55 g — see below, and note it is
+untested.
 
-```python
-from case import PRESETS, export
-from dataclasses import replace
-export(replace(PRESETS["vented"], clr_xy=0.40), "snug")
-```
-
-Charging: the USB-C opening is **15.05 × 7.08 mm**, the enlarged one. The stock
-case's is 12.65 × 4.68 and will not clear most cables — the height is what
-blocks them, not the width.
-
-## Customising
+## Changing it
 
 ```bash
 uv venv --python 3.12 .venv
 uv pip install --python .venv/bin/python build123d trimesh numpy rtree matplotlib
-
-python case.py vented        # -> pixel8pro_case_vented.{stl,step}
-python case.py               # default preset
 ```
 
-`case.py <preset>` also prints the thicknesses that decide whether a build is
-printable, so you can see what a change actually did:
+`Params()` **is** the printed design — bare defaults give exactly the file
+above, so anything you build without arguments is the tested configuration:
+
+```python
+from dataclasses import replace
+from case import Params, export
+
+export(replace(Params(), clr_xy=0.40), "snug")   # tighter fit
+```
+
+`case.py` prints the thicknesses that decide whether a build is printable, so
+you can see what a change actually did:
 
 ```
   outer          80.68 x 166.78 x 13.00 mm
@@ -114,20 +103,27 @@ printable, so you can see what a change actually did:
   back skin      none (open cells)
 ```
 
-The knobs you are most likely to want:
+The knobs most worth touching:
 
 | Parameter | Default | Effect |
 |---|---|---|
-| `clr_xy` | 0.592 | Fit. Lower is snugger; 0.40 is good for TPU |
-| `wall` | 3.0 (1.5 in `vented`) | Side wall — also sets the outer size |
+| `clr_xy` | 0.592 | Fit. Lower is snugger; 0.40 suits TPU |
+| `wall` | 1.5 | Side wall — also sets the outer size. 1.5 is the floor |
 | `cam_skin` | 1.0 | Material over the lenses. Do not go below 1.0 |
-| `hex_pitch` | 14 (8 in `mesh`+) | Honeycomb cell size |
-| `pocket_through` | False | True = open cells, False = closed back |
-| `side_vents` | False | Hexagonal vents through the side walls |
-| `usb_bar` | False | Sacrificial bar across the USB opening |
+| `hex_pitch` | 8.0 | Honeycomb cell size |
+| `pocket_through` | True | False = closed back with a `rib_skin` skin |
+| `side_vents` | True | Hexagonal vents through the side walls |
+| `usb_bar` | True | Sacrificial bar across the USB opening |
 
-Every dimension is a named parameter in `Params` — see
-[DESIGN.md](DESIGN.md) for what each one is and why it has that value.
+> **Only the default configuration has been printed and tested.** Everything
+> else builds and passes the geometric checks, but has not been in a printer or
+> on a phone. [DESIGN.md](DESIGN.md) gives the measured limits for each
+> parameter — particularly `wall`, `cam_skin` and the button clearance, which
+> bind before you would expect.
+
+There is one other preset, `original`, which reproduces the source STL for
+`verify.py`. It is the source geometry complete with its defects and is **not
+for printing**.
 
 **The STLs are not in this repo**, neither the sources nor the exports.
 `case.py` regenerates them exactly. To run `verify.py`, first download

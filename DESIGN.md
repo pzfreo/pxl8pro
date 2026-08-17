@@ -8,6 +8,12 @@ Every dimension in `Params` was measured from the source meshes rather than
 eyeballed. `verify.py` samples the rebuilt surface and reports its distance
 back to the original.
 
+**Only the default configuration has been printed and tested.** The
+comparisons below are measurements taken while arriving at it — they record
+why each value is what it is, and the limits found along the way. Where a
+figure was measured at a configuration other than the shipped one, that is
+stated.
+
 ## Contents
 
 - [How it is built](#how-it-is-built)
@@ -376,28 +382,26 @@ is only the side wall below the lip; the rim and lip above it have to stay.
 
 ## Where the mass is
 
-Decomposing `slim` (31.6 cm³) by region:
+Decomposing the shipped design (25.4 cm³) by region:
 
 | Region | Volume | Share |
 |---|---|---|
-| honeycomb lattice | 11.50 cm³ | 36.4 % |
-| side walls + rim (z > 0) | 9.06 cm³ | 28.7 % |
-| back frame (the `rib_border` ring) | 5.56 cm³ | 17.6 % |
-| back perimeter skirt (wall below z = 0) | 3.15 cm³ | 10.0 % |
-| camera surround + skin | 2.64 cm³ | 8.4 % |
+| honeycomb lattice | 11.53 cm³ | 45.4 % |
+| side walls + rim (z > 0) | 6.23 cm³ | 24.6 % |
+| back frame (the `rib_border` ring) | 3.55 cm³ | 14.0 % |
+| back perimeter skirt (wall below z = 0) | 2.32 cm³ | 9.1 % |
+| camera surround + skin | 1.95 cm³ | 7.7 % |
 
-The frame and the skirt below it together are a solid rail around the
-perimeter — 8.7 cm³, **28 % of the case**, for what is only a few millimetres
-of border. Trimming it is the cheapest weight saving available:
+The lattice is now the largest single item, which is the sign that the other
+levers have been spent. Earlier in the process the picture was different: at a
+4.0 mm `rib_border` and a 5.2 mm back, the frame and the skirt together came to
+8.7 cm³ — 28 % of the case — for what is only a few millimetres of border.
+Trimming that ring was the cheapest weight saving available and is why the
+design uses 2.5 and 2.0.
 
-| | Volume | ≈ TPU |
-|---|---|---|
-| `slim` as-is (`rib_border` 4.0, `rib_cam_border` 3.0) | 31.6 cm³ | 38 g |
-| `rib_border` 3.0 | 30.3 cm³ | 37 g |
-| `rib_border` 2.5 | 29.8 cm³ | 36 g |
-| `rib_border` 2.5, `rib_cam_border` 2.0 | 29.1 cm³ | 35 g |
-
-`vented` uses 2.5 and 2.0.
+The remaining mass is structural. `back_thk` was the biggest lever of all,
+because the cells are `back_thk` tall, so shortening the back thins the whole
+lattice at once.
 
 ## Verification
 
