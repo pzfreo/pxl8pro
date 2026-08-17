@@ -1,0 +1,13 @@
+# Build artefacts — regenerate with `python case.py <preset>`
+pixel8pro_case_*.stl
+pixel8pro_case_*.step
+compare.png
+
+# Source models are not redistributed here; see README (Attribution).
+# Download them from the Printables page before running verify.py.
+pixel8proCase.stl
+pixel8CaseChargeHoleBigger.stl
+
+.venv/
+__pycache__/
+*.pyc
