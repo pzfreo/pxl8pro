@@ -27,6 +27,8 @@ stated.
 - [Back styles](#back-styles)
 - [Side walls](#side-walls)
 - [Side wall vents](#side-wall-vents)
+- [The top edge](#the-top-edge)
+- [The back edge](#the-back-edge)
 - [Where the mass is](#where-the-mass-is)
 - [Verification](#verification)
 
@@ -104,8 +106,12 @@ Measured off `pixel8CaseChargeHoleBigger.stl`:
    impacts land, on the thinnest walls in the part. Now a proper tangent
    rounded rectangle, 3.0 mm all round.
 2. **Back-edge chamfer was on two sides only** — 3.2 mm at 45° on −X and −Y,
-   square on +X and +Y. Replaced with a symmetric 0.8 mm chamfer, which also
-   keeps the first layer off the very edge when printing back-down.
+   square on +X and +Y. Now a symmetric **2.5 mm break all round**, and a
+   softer one: `back_edge_style="soft"` (default) is the 45° chamfer with its
+   top edge blended into the wall on R1.5 (`back_edge_blend`), so the hand
+   meets a round rather than a line, while the surface leaving the bed is
+   still 45° and prints unsupported. See
+   [The back edge](#the-back-edge).
 3. **The flash cutout contained an unprintable sliver** — see
    [Camera](#camera-and-back-thickness).
 4. **Sharp-cornered camera recess** — now R1.0.
@@ -312,6 +318,32 @@ The catch at fine pitch is **print time, not material**: hole perimeter rises
 faster than volume falls. `hex_pitch` 8 traces 47 % more wall than `hex_pitch`
 14 through the full depth.
 
+### The cell edges
+
+`cell_chamfer` breaks the bed-side edge of every cell — the lattice is the face
+you see and touch on the back of the case, and unbroken it is 190 sharp
+hexagons. 45°, not a round, for the same reason as the back edge: printed
+back-down these are first-layer edges, and a fillet is tangent to the bed, so
+each layer would step into the cell with nothing under it. A 45° flare advances
+exactly one layer height per layer.
+
+It is paid for out of the first layer — each cell wall loses twice the break,
+and so does the frame where cells meet it:
+
+| `cell_chamfer` | Cell wall at the bed | First layer | Frame at the bed |
+|---|---|---|---|
+| 0 | 1.50 mm | 4684 mm² | 1.52 mm |
+| 0.30 | 0.90 mm | 3512 mm² | 1.24 mm |
+| **0.40** | **0.70 mm** | **3071 mm²** | **1.14 mm** |
+| 0.50 | 0.50 mm | 2617 mm² | 1.04 mm |
+
+0.40 is shipped. The first layer is one connected island at every value in that
+table — what matters for a lattice is that no cell is left printing on its own
+— and 0.70 mm walls print as a pair of thin perimeters. 0.50 would leave a
+single 0.50 mm extrusion holding each cell down, which is where this stops
+being safe. Above the break the walls are the full `rib_w` 1.50 mm, so none of
+this touches the lattice's stiffness; it is paid entirely in bed adhesion.
+
 ## Side walls
 
 `wall` sets the outer size directly, since `out_w = cav_w + 2·wall`. Thinning
@@ -330,7 +362,8 @@ thicknesses are derived from it, and they bind before the wall itself does:
 
 *The rim top stays 2.70 mm wide at every wall thickness, because
 `rim_ledge` and `rim_taper` are fractions of `wall`. Blue dash marks the cavity
-wall, red dot the lip inner edge.*
+wall, red dot the lip inner edge. Drawn with the original's ledge-and-taper
+rim; see [The top edge](#the-top-edge) for the profile actually shipped.*
 
 *(behind-buttons at `btn_depth` 0.229; at the 0.5 default subtract a further
 0.27)*
@@ -344,7 +377,7 @@ Two couplings had to be fixed before thin walls behaved:
   2.0 mm), and their sum is exactly the original's 3.0 mm wall — which is why
   the original's rim top lands precisely on the cavity wall. Held absolute,
   they ate past the lip as the wall thinned. They are now fractions of `wall`
-  (1/3 and 2/3), so the rim top stays exactly `lip_inset` wide — 2.70 mm at
+  summing to 1, so the rim top stays exactly `lip_inset` wide — 2.70 mm at
   every row above, instead of collapsing to 0.90 mm at `wall` 1.2.
 - **The port chamfer could eat the whole wall.** `port_chamfer` is 1.0 mm, so
   at `wall` 1.0 there was no straight bore left and the port became a pure
@@ -380,17 +413,90 @@ horizontal bridge flanked by self-supporting 60° edges.
 Vents are the smallest of the three weight levers, because the perforable band
 is only the side wall below the lip; the rim and lip above it have to stay.
 
+## The top edge
+
+Where the run from wall to rim top is spent is free — only `rim_ledge +
+rim_taper = wall` is fixed, and that is what holds the rim top at `lip_inset`.
+The original spends a third of it on a flat ledge, which leaves a 0.5 mm
+upward-facing shelf running right around the case at `wall_top`. It is the
+first thing a finger finds sliding up the side, and it collects pocket lint.
+
+Shipped here: `rim_ledge_frac = 0`, so the whole run is taper and the wall
+rises straight into it, plus two fillets that cost nothing to print because
+both edges face up and in — every layer above them is smaller than the one
+below, so there is no overhang either way.
+
+| | Value | What it does |
+|---|---|---|
+| `rim_ledge_frac` | 0.0 | no shelf; the wall runs into the taper |
+| `rim_blend` | 1.5 mm | rounds the wall-to-taper crease, tangent from z = 7.00 |
+| `rim_top_r` | 0.8 mm | rounds the outer edge of the rim top |
+
+Measured on the shipped mesh, the outer face is full width to z = 7.00, rolls
+through the blend, runs the taper at a constant 0.75 mm in per mm up, and
+turns over the top round from z = 9.18. There is no step anywhere on it.
+
+None of this touches retention. The lip is cut by the cavity from the inside,
+so `lip_inset` and the ramp are exactly as they were; `rim_top_r` only takes
+0.4 mm off the outer side of the 2.70 mm rim top, leaving 2.3 mm flat. The
+`original` preset keeps the source's ledge, unsoftened, so the verification
+baseline is unmoved.
+
+## The back edge
+
+`back_edge` is how far the break climbs the outer wall, and its ceiling is
+`back_thk` — 3.5 mm. Above the cavity floor the wall is only `wall` (1.5 mm)
+thick with the phone behind it, and the USB-C slot starts 0.3 mm above that
+floor, so anything taller eats structure instead of a corner.
+
+The other cost is drop protection, and it is the one that sets the value. The
+break is cut off the case's back corner, which is exactly where a dropped
+phone lands: the clearance between the phone's back corner and the 45° face is
+(5.59 − `back_edge`) / √2, so **every millimetre of break costs 0.71 mm of
+corner crush distance**. At 3.0 that clearance is 1.83 mm and the back corner
+becomes the worst-protected direction on the case; at **2.5 it is 2.19 mm**,
+level with the 2.09 mm the side walls give and no longer the weak point. 2.5
+also leaves the back face a 1.5 mm frame to stand on, since the honeycomb
+field starts `wall + rib_border` = 4.0 mm in from the outer face.
+
+`back_edge_style` picks the profile. All three are the same 2.5 mm break:
+
+| Style | In the hand | Printed back-down |
+|---|---|---|
+| `"soft"` (default) | 45° flat, rounded into the wall on R1.5 | 45° off the bed — clean |
+| `"chamfer"` | flat, two hard lines | 45° off the bed — clean |
+| `"fillet"` | fully round | tangent to the bed — the second layer steps out √(2·r·layer) ≈ 1.0 mm at r = 2.5 with nothing under it, so the first perimeters hang and droop |
+
+That last row is why the default is not a plain fillet. A true round is the
+nicest edge to hold and the worst to lay down, because a fillet leaves the bed
+horizontally; a 45° chamfer leaves it at exactly the angle a printer can hold
+unsupported. `"soft"` keeps the chamfer where the printer needs it and puts the
+round where the hand is, at the cost of one fillet operation. `"fillet"` is
+still the right choice at small radii — below about 0.8 mm the step is under a
+nozzle width and the droop is invisible.
+
+The blend reaches 0.414 · `back_edge_blend` further up the wall than the
+chamfer does — with the defaults it becomes tangent to the wall 0.38 mm *below*
+the cavity floor, so it takes nothing at all off the side wall, and it finishes
+0.68 mm below the USB-C opening. Measured on the mesh, the outer face is
+already full width 5 µm at case z = −0.50 and exact from −0.38 up.
+
 ## Where the mass is
 
-Decomposing the shipped design (25.4 cm³) by region:
+Decomposing the shipped design (23.9 cm³) by region:
 
 | Region | Volume | Share |
 |---|---|---|
-| honeycomb lattice | 11.53 cm³ | 45.4 % |
-| side walls + rim (z > 0) | 6.23 cm³ | 24.6 % |
-| back frame (the `rib_border` ring) | 3.55 cm³ | 14.0 % |
-| back perimeter skirt (wall below z = 0) | 2.32 cm³ | 9.1 % |
-| camera surround + skin | 1.95 cm³ | 7.7 % |
+| honeycomb lattice | 11.22 cm³ | 46.9 % |
+| side walls + rim (z > 0) | 6.44 cm³ | 26.9 % |
+| back frame (the `rib_border` ring) | 3.56 cm³ | 14.9 % |
+| camera surround + skin | 1.48 cm³ | 6.2 % |
+| back perimeter skirt (wall below z = 0) | 1.21 cm³ | 5.1 % |
+
+The last two lines are where the 2.5 mm back edge break went: it took
+1.34 cm³ (~1.6 g) off the case, 1.11 of it out of the skirt and 0.23 out of
+the frame. It is a cheap mass lever, but not a free one — see
+[The back edge](#the-back-edge) for what it costs at the corner.
 
 The lattice is now the largest single item, which is the sign that the other
 levers have been spent. Earlier in the process the picture was different: at a
