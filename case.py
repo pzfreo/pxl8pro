@@ -28,6 +28,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from build123d import (
+    Axis,
     Box,
     Circle,
     Plane,
@@ -71,18 +72,48 @@ class Params:
     cam_skin: float = 1.0  # material left over the camera bar
 
     # ---- rim / lip -------------------------------------------------------
-    # The original chamfers the back edge 3.2 mm on the -X and -Y sides only
-    # and leaves +X/+Y square. Applied symmetrically here; it also keeps the
-    # first layer off the very edge when printing back-down.
-    back_edge_chamfer: float = 0.8
+    # The break around the outer back edge -- the edge the hand runs along.
+    # The original chamfers it 3.2 mm at 45 deg on the -X and -Y sides only
+    # and leaves +X/+Y square; applied symmetrically here.
+    #
+    # `back_edge` is how far it climbs the wall. Its ceiling is `back_thk`
+    # (3.5 mm): above the cavity floor the wall is only `wall` thick with the
+    # phone behind it, and the USB-C slot starts 0.3 mm above that floor.
+    # 2.5 leaves the back face a 1.5 mm frame to stand on, since the
+    # honeycomb starts wall + rib_border = 4.0 mm in from the outer face.
+    #
+    # The break is also the case's corner drop protection, and it spends it:
+    # the clearance between the phone's back corner and the 45 deg face is
+    # (5.59 - back_edge) / sqrt(2), so every millimetre of break costs
+    # 0.71 mm of crush distance. 2.5 keeps 2.19 mm there.
+    #
+    # Three profiles, all printable back-down except where noted:
+    #   "soft"    45 deg chamfer, its top edge blended into the wall with
+    #             `back_edge_blend`. Rounded where the fingers wrap over it,
+    #             still a 45 deg surface off the bed, so it prints clean.
+    #   "chamfer" the original's flat 45 deg cut, two hard lines.
+    #   "fillet"  a true round, tangent to the bed. Softest in the hand and
+    #             the worst to print: the second layer steps out
+    #             sqrt(2*r*layer) with nothing under it -- 1.1 mm at r = 3.0
+    #             and 0.2 mm layers, so the first few perimeters hang and
+    #             droop. Fine at r <= ~0.8; use "soft" for anything bigger.
+    back_edge: float = 2.5
+    back_edge_style: str = "soft"  # "soft" | "chamfer" | "fillet"
+    back_edge_blend: float = 1.5  # "soft": radius rounding chamfer into wall
 
     rim_h: float = 2.0  # height of the tapered rim above the wall
-    # The rim's total inward run equals the wall thickness, split 1:2 between
-    # the flat ledge and the taper. That is how the original is built (1.0 +
-    # 2.0 on a 3.0 wall) and it keeps the rim top exactly `lip_inset` wide at
-    # any wall thickness, instead of the rim eating the lip as the wall thins.
-    rim_ledge_frac: float = 1 / 3
-    rim_taper_frac: float = 2 / 3
+    # The rim's total inward run equals the wall thickness, so the rim top
+    # stays exactly `lip_inset` wide at any wall thickness instead of the rim
+    # eating the lip as the wall thins. How that run is split between a flat
+    # ledge and the taper is free, and only the ledge is visible: the original
+    # spends 1/3 of it on a ledge (1.0 + 2.0 on a 3.0 wall), which leaves an
+    # upward-facing shelf around the case that catches the fingers and the
+    # pocket lint. Here the whole run is taper, so the wall rises straight
+    # into it, and `rim_blend` rounds the crease where they meet.
+    rim_ledge_frac: float = 0.0
+    rim_taper_frac: float = 1.0
+    rim_blend: float = 1.5  # rounds the wall-to-taper crease
+    rim_top_r: float = 0.8  # rounds the outer edge of the rim top
     lip_inset: float = 2.70  # how far the lip reaches in past the cavity wall
     lip_ramp_h: float = 1.0  # rise over which the lip ramps inward
     lip_ramp_fillet: float = 0.8  # softens the ramp so the phone slides in
@@ -184,6 +215,25 @@ class Params:
     rib_border: float = 2.5  # solid frame kept around the perimeter
     rib_cam_border: float = 2.0  # solid kept around the camera pocket
     pocket_through: bool = True  # cut cells clean through: open, no skin
+    # Break on the bed-side edge of every cell, where the lattice is the face
+    # you see and touch on the back of the case. 45 deg, not a round: printed
+    # back-down these are first-layer edges, and a fillet there is tangent to
+    # the bed, so each layer would step into the cell unsupported. The 45 deg
+    # flare advances one layer height per layer and prints clean.
+    #
+    # It is spent out of the first layer: each cell wall loses 2 x this at the
+    # bed, and so does the frame where cells meet it. Measured:
+    #
+    #   break   rib at bed   first layer   frame
+    #   0.30      0.90 mm      3512 mm2    1.24 mm
+    #   0.40      0.70 mm      3071 mm2    1.14 mm
+    #   0.50      0.50 mm      2617 mm2    1.04 mm
+    #
+    # 0.40 is the shipped value: 0.70 mm is still under two 0.4 mm extrusion
+    # widths but prints as a pair of thin perimeters, and the first layer is
+    # one connected island at every value above. 0.50 leaves 0.50 mm walls --
+    # a single extrusion -- which is where this stops being safe.
+    cell_chamfer: float = 0.4
     pocket_fillet: float = 1.0  # rounds pocket corners; helps flow and stress
     pocket_min_frac: float = 0.30  # drop boundary pockets below this of full
 
@@ -317,19 +367,38 @@ def _ci(r, at=(0.0, 0.0)):
 
 def _outer_shell(p: Params):
     """Outer solid: prismatic walls, then the tapered rim on a small ledge."""
-    c = p.back_edge_chamfer
-    z0 = p.back_z + c
-    body = Pos(0, 0, z0) * extrude(
-        _rrect(p.out_w, p.out_l, p.out_r), amount=p.wall_top - z0
-    )
-    if c > 0:
-        body += loft(
-            [
-                Plane.XY.offset(p.back_z)
-                * _rrect(p.out_w - 2 * c, p.out_l - 2 * c, p.out_r - c),
-                Plane.XY.offset(z0) * _rrect(p.out_w, p.out_l, p.out_r),
-            ]
+    c = p.back_edge
+    if c > p.back_thk:
+        raise ValueError(
+            f"back_edge {c} exceeds back_thk {p.back_thk}: the break would "
+            "climb past the cavity floor into the side wall"
         )
+    if p.back_edge_style == "fillet":
+        body = Pos(0, 0, p.back_z) * extrude(
+            _rrect(p.out_w, p.out_l, p.out_r), amount=p.wall_top - p.back_z
+        )
+        if c > 0:
+            body = fillet(body.faces().sort_by(Axis.Z)[0].edges(), c)
+    else:
+        z0 = p.back_z + c
+        body = Pos(0, 0, z0) * extrude(
+            _rrect(p.out_w, p.out_l, p.out_r), amount=p.wall_top - z0
+        )
+        if c > 0:
+            body += loft(
+                [
+                    Plane.XY.offset(p.back_z)
+                    * _rrect(p.out_w - 2 * c, p.out_l - 2 * c, p.out_r - c),
+                    Plane.XY.offset(z0) * _rrect(p.out_w, p.out_l, p.out_r),
+                ]
+            )
+            if p.back_edge_style == "soft" and p.back_edge_blend > 0:
+                # Round the chamfer-to-wall line. The blend runs 0.414 * r
+                # further up the wall than the chamfer does and is tangent
+                # there; with the defaults that lands 0.38 mm below the
+                # cavity floor, so the side wall keeps its full thickness.
+                top = [e for e in body.edges() if abs(e.center().Z - z0) < 1e-6]
+                body = fillet(top, p.back_edge_blend)
 
     ledge_w = p.out_w - 2 * p.rim_ledge
     ledge_l = p.out_l - 2 * p.rim_ledge
@@ -345,7 +414,19 @@ def _outer_shell(p: Params):
             ),
         ]
     )
-    return body + rim
+    shell = body + rim
+
+    # Soften the top. Both edges face upwards and inwards, so neither costs
+    # anything to print: every layer above them is smaller than the one below.
+    if p.rim_blend > 0:
+        crease = [e for e in shell.edges() if abs(e.center().Z - p.wall_top) < 1e-6]
+        if crease:
+            shell = fillet(crease, p.rim_blend)
+    if p.rim_top_r > 0:
+        # The cavity is not cut yet, so the top face is the whole rim and its
+        # edges are the outer lip of the case.
+        shell = fillet(shell.faces().sort_by(Axis.Z)[-1].edges(), p.rim_top_r)
+    return shell
 
 
 def _cavity(p: Params):
@@ -685,7 +766,17 @@ def _back_lightening(p: Params):
         if p.pocket_through:
             # Cells go clean through the back: the phone shows through, and
             # the back becomes a pure lattice with no skin behind it.
-            return Pos(0, 0, p.back_z - 0.5) * extrude(sk, amount=p.back_thk + 1.0)
+            cut = Pos(0, 0, p.back_z - 0.5) * extrude(sk, amount=p.back_thk + 1.0)
+            if p.cell_chamfer > 0:
+                # Flare each cell out towards the bed. Extruding downwards
+                # with a negative taper grows the section as it descends, so
+                # the cell is `cell_chamfer` wider where it breaks out of the
+                # back face and nominal `cell_chamfer` above it.
+                over = 0.5
+                cut += Pos(0, 0, p.back_z + p.cell_chamfer) * extrude(
+                    sk, amount=-(p.cell_chamfer + over), taper=-45
+                )
+            return cut
         depth = p.back_thk - p.rib_skin
         return Pos(0, 0, -depth) * extrude(sk, amount=depth + 0.5)
 
@@ -765,6 +856,12 @@ PRESETS = {
     # changing a default can never silently move the verification baseline.
     "original": Params(
         back_style="flat",
+        back_edge=0.8,  # what the baseline was measured against
+        back_edge_style="chamfer",
+        rim_ledge_frac=1 / 3,  # the source's ledge-and-taper rim, ...
+        rim_taper_frac=2 / 3,
+        rim_blend=0.0,  # ... unsoftened
+        rim_top_r=0.0,
         wall=3.0,
         cam_recess=3.7,
         cam_skin=1.5,
@@ -772,11 +869,18 @@ PRESETS = {
         button_bumps=False,
         flash_stadium=False,
         pocket_through=False,
+        cell_chamfer=0.0,
         side_vents=False,
         usb_bar=False,
         spk_bars=0,
     ),
 }
+
+
+def _edge_note(p: Params) -> str:
+    if p.back_edge_style == "soft":
+        return f"45 deg + R{p.back_edge_blend:.2f} blend"
+    return "45 deg chamfer" if p.back_edge_style == "chamfer" else "fillet"
 
 
 def describe(p: Params) -> str:
@@ -790,6 +894,9 @@ def describe(p: Params) -> str:
             f"  behind buttons {p.wall - p.btn_depth:.2f} mm",
             f"  port bore      {p.wall - chamfer:.2f} mm straight + {chamfer:.2f} chamfer",
             f"  back skin      {'none (open cells)' if p.pocket_through else f'{p.rib_skin:.2f} mm'}",
+            f"  cell edge      {p.cell_chamfer:.2f} mm 45 deg (ribs {p.rib_w - 2 * p.cell_chamfer:.2f} mm at the bed)",
+            f"  back edge      {p.back_edge:.2f} mm {_edge_note(p)}",
+            f"  stands on      {p.wall + p.rib_border - p.back_edge:.2f} mm frame",
         ]
     )
 

@@ -1,6 +1,6 @@
 # Pixel 8 Pro case
 
-A printable TPU case for the Pixel 8 Pro — **31 g**, 80.7 × 166.8 × 13.0 mm,
+A printable TPU case for the Pixel 8 Pro — **29 g**, 80.7 × 166.8 × 13.0 mm,
 open honeycomb back, no supports.
 
 Built as a parametric [build123d](https://build123d.readthedocs.io) program
@@ -23,7 +23,7 @@ second, fix a few things that turned up on the way — end walls that were 2 mm
 instead of 3, a chamfer applied to only two sides, a flash cutout with an
 unprintable 0.2 mm sliver in it — and then make it a lot lighter.
 
-The result is **31 g against the original's 91 g**, and 1.7 mm thinner.
+The result is **29 g against the original's 91 g**, and 1.7 mm thinner.
 
 Full measurements, defects and design reasoning are in **[DESIGN.md](DESIGN.md)**.
 
@@ -61,10 +61,13 @@ passes through a speaker slot, so they are just a grille.
 
 | | |
 |---|---|
-| Weight | ~31 g in TPU (25.4 cm³) |
+| Weight | ~29 g in TPU (23.9 cm³) |
 | Outer | 80.68 × 166.78 × 13.00 mm (81.68 across the button bumps) |
 | Side wall | 1.5 mm |
+| Back edge | 2.5 mm break, 45° blended into the wall with R1.5 |
+| Top edge | no ledge — the wall runs into the rim taper, R1.5 into it and R0.8 over the top |
 | Back | open honeycomb, 6.5 mm cells — the phone shows through |
+| Cell edges | 0.4 mm × 45° break on the bed side, all 190 cells |
 | Over the lenses | 1.0 mm |
 | USB-C opening | 15.05 × 7.08 mm |
 
@@ -130,6 +133,15 @@ for printing**.
 `pixel8CaseChargeHoleBigger.stl` from
 [the Printables page](https://www.printables.com/model/765202-pixel-8-pro-case-tpu)
 into the repo root.
+
+### With an AI assistant
+
+The repo ships a `.mcp.json` for
+[build123d-mcp](https://github.com/pzfreo/build123d-mcp), so an MCP-capable
+assistant (Claude Code, Cursor, VS Code, …) opened here can build the model,
+render it and measure the geometry rather than editing `case.py` blind. It needs
+[uv](https://github.com/astral-sh/uv) on the path; the server is fetched on
+first use.
 
 ## Credits and licence
 
